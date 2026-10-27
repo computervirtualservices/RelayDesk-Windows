@@ -21,6 +21,11 @@ public static class FfmpegCommandBuilder
             (spec.Width > 1920 || spec.Height > 1080 || spec.Fps > 30 ||
              (destination.Profile != OutputProfile.CopySource && destination.PlannedVideoKbps > 6000)))
             throw new ArgumentException($"{destination.Name}: LinkedIn supports up to 1080p30 and 6000 kbps. Choose a smaller profile.");
+        // Vertical platforms ingest portrait video only; a 4K landscape feed wastes tens of Mbps of upload.
+        if ((destination.Platform.Equals("Instagram", StringComparison.OrdinalIgnoreCase) ||
+             destination.Platform.Equals("TikTok", StringComparison.OrdinalIgnoreCase)) &&
+            (spec.IsCopy || !spec.IsPortrait || spec.Fps > 30 || destination.PlannedVideoKbps > 6000))
+            throw new ArgumentException($"{destination.Name}: {destination.Platform} needs a portrait profile (720 × 1280 or 1080 × 1920, 30 fps) at 6000 kbps or less.");
         if (destination.Profile != OutputProfile.CopySource &&
             (destination.PlannedVideoKbps < 300 || destination.PlannedVideoKbps > 60000))
             throw new ArgumentException($"{destination.Name}: bitrate must be between 300 and 60,000 kbps.");

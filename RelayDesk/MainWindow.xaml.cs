@@ -73,9 +73,19 @@ public partial class MainWindow : Window
     private void WriteLog(string message)
     {
         if (LogBox is null) return;
-        LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+        var now = DateTime.Now;
+        var line = $"[{now:HH:mm:ss}] {message}{Environment.NewLine}";
+        LogBox.AppendText(line);
         if (LogBox.Text.Length > 90000) LogBox.Text = LogBox.Text[^65000..];
         LogBox.ScrollToEnd();
+        // Messages are already redacted of stream keys and destination URLs by RelayController.
+        try
+        {
+            var dir = Path.Combine(ConfigStore.DirectoryPath, "logs");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, $"relaydesk-{now:yyyy-MM-dd}.log"), line);
+        }
+        catch (Exception) { /* Logging to disk is best-effort; the on-screen log still works. */ }
     }
 
     private void SaveConfiguration()

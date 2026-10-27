@@ -22,8 +22,11 @@ public sealed class RelayController
     }
 
     private readonly ConcurrentDictionary<Guid, Run> _sessions = new();
+    private readonly ConcurrentQueue<string> _mediaTail = new();
     private CancellationTokenSource? _serverCancellation;
     private Process? _mediaServer;
+    private string? _mediamtx;
+    private string? _mediaConfigPath;
     private string? _ffmpeg;
     private VideoEncoder _encoder;
 
@@ -39,7 +42,7 @@ public sealed class RelayController
 
         _ffmpeg = ToolLocator.Find("ffmpeg.exe")
             ?? throw new FileNotFoundException("FFmpeg not found. Add ffmpeg.exe in the tools folder or PATH.");
-        var mediamtx = ToolLocator.Find("mediamtx.exe")
+        _mediamtx = ToolLocator.Find("mediamtx.exe")
             ?? throw new FileNotFoundException("MediaMTX not found. Add mediamtx.exe in the tools folder or PATH.");
         if (!PortIsAvailable())
             throw new InvalidOperationException("TCP 127.0.0.1:1935 is already in use. Close the other RTMP server.");
@@ -49,10 +52,11 @@ public sealed class RelayController
         try
         {
             Directory.CreateDirectory(ConfigStore.DirectoryPath);
-            var configPath = Path.Combine(ConfigStore.DirectoryPath, "mediamtx.yml");
+            _mediaConfigPath = Path.Combine(ConfigStore.DirectoryPath, "mediamtx.yml");
             // Latest MediaMTX uses these values; bind RTMP to loopback only.
-            await File.WriteAllTextAsync(configPath, """
+            await File.WriteAllTextAsync(_mediaConfigPath, """
                 logLevel: warn
+                writeQueueSize: 8192
                 rtsp: false
                 rtmp: true
                 rtmpAddress: 127.0.0.1:1935
@@ -69,21 +73,9 @@ public sealed class RelayController
                     source: publisher
                 """);
 
-            var start = new ProcessStartInfo(mediamtx)
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = ConfigStore.DirectoryPath
-            };
-            start.ArgumentList.Add(configPath);
-            _mediaServer = new Process { StartInfo = start };
-            if (!_mediaServer.Start()) throw new InvalidOperationException("Could not start MediaMTX.");
-            _ = DrainMediaOutputAsync(_mediaServer.StandardOutput);
-            _ = DrainMediaOutputAsync(_mediaServer.StandardError);
-            await WaitForMediaServerAsync(_mediaServer, _serverCancellation.Token);
+            await StartMediaServerAsync(_serverCancellation.Token);
             Log?.Invoke("Local RTMP ingest ready. Start streaming in OBS to rtmp://127.0.0.1:1935/live, key: studio.");
+            _ = SuperviseMediaServerAsync(_serverCancellation.Token);
             foreach (var destination in destinations) StartDestination(destination);
         }
         catch
@@ -168,12 +160,14 @@ public sealed class RelayController
         var output = destination.Server.TrimEnd('/') + "/" + key;
         var reconnectDelays = new[] { 2, 4, 8, 15, 30, 60 };
         int attempts = 0;
+        bool waitingForObs = false;
         while (!token.IsCancellationRequested)
         {
             Process? process = null;
+            bool inputMissing = false;
             try
             {
-                DestinationUpdated?.Invoke(destination.Id, "Connecting / waiting for OBS", "—");
+                DestinationUpdated?.Invoke(destination.Id, waitingForObs ? "Waiting for OBS" : "Connecting", "—");
                 var start = FfmpegCommandBuilder.Build(ffmpeg, InputUrl, output, destination, _encoder);
                 process = new Process { StartInfo = start };
                 session.Process = process;
@@ -193,6 +187,7 @@ public sealed class RelayController
                         if (!hasProgress)
                         {
                             hasProgress = true;
+                            waitingForObs = false;
                             Log?.Invoke($"[{destination.Name}] Sending video. Confirm actual live status on the destination platform.");
                         }
                         DestinationUpdated?.Invoke(destination.Id, "Sending", currentBitrate);
@@ -202,6 +197,11 @@ public sealed class RelayController
                     {
                         DestinationUpdated?.Invoke(destination.Id, "Input ended", "—");
                     }
+                    else if (!hasProgress && IsInputUnavailable(line))
+                    {
+                        // OBS is not publishing to MediaMTX yet; this is the normal idle state, not a failure.
+                        inputMissing = true;
+                    }
                     else if (line.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
                              line.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
                              line.Contains("Unknown encoder", StringComparison.OrdinalIgnoreCase))
@@ -210,8 +210,17 @@ public sealed class RelayController
                     }
                 }
                 await process.WaitForExitAsync(token);
-                if (!token.IsCancellationRequested)
+                if (inputMissing)
+                {
+                    if (!waitingForObs)
+                        Log?.Invoke($"[{destination.Name}] Waiting for OBS to start streaming to rtmp://127.0.0.1:1935/live (key: studio).");
+                    waitingForObs = true;
+                }
+                else if (!token.IsCancellationRequested)
+                {
+                    waitingForObs = false;
                     Log?.Invoke($"[{destination.Name}] FFmpeg exited ({process.ExitCode}); will retry.");
+                }
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
             catch (Exception ex)
@@ -225,13 +234,20 @@ public sealed class RelayController
             }
 
             if (token.IsCancellationRequested) break;
-            var delay = reconnectDelays[Math.Min(attempts++, reconnectDelays.Length - 1)];
-            DestinationUpdated?.Invoke(destination.Id, $"Retry in {delay}s", "—");
+            // Poll quickly for OBS so outputs start within seconds; back off only on real failures.
+            var delay = inputMissing ? 2 : reconnectDelays[Math.Min(attempts++, reconnectDelays.Length - 1)];
+            DestinationUpdated?.Invoke(destination.Id, inputMissing ? "Waiting for OBS" : $"Retry in {delay}s", "—");
             try { await Task.Delay(TimeSpan.FromSeconds(delay), token); }
             catch (OperationCanceledException) { break; }
         }
         DestinationUpdated?.Invoke(destination.Id, "Stopped", "—");
     }
+
+    /// <summary>FFmpeg's messages when the local OBS feed does not exist yet.</summary>
+    private static bool IsInputUnavailable(string line) =>
+        line.StartsWith("[in#0", StringComparison.Ordinal) ||
+        line.Contains("Error opening input file " + InputUrl, StringComparison.Ordinal) ||
+        line.StartsWith("Error opening input files", StringComparison.Ordinal);
 
     private static string Redact(string text, string key, string url, string server)
     {
@@ -242,6 +258,67 @@ public sealed class RelayController
         return text;
     }
 
+    private async Task StartMediaServerAsync(CancellationToken token)
+    {
+        var start = new ProcessStartInfo(_mediamtx!)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = ConfigStore.DirectoryPath
+        };
+        start.ArgumentList.Add(_mediaConfigPath!);
+        _mediaTail.Clear();
+        var server = new Process { StartInfo = start };
+        if (!server.Start()) throw new InvalidOperationException("Could not start MediaMTX.");
+        _mediaServer = server;
+        _ = DrainMediaOutputAsync(server.StandardOutput);
+        _ = DrainMediaOutputAsync(server.StandardError);
+        await WaitForMediaServerAsync(server, token);
+    }
+
+    /// <summary>Restarts MediaMTX if it exits while the relay is active, so OBS and the outputs can reconnect.</summary>
+    private async Task SuperviseMediaServerAsync(CancellationToken token)
+    {
+        var restartDelays = new[] { 1, 2, 5, 10, 30 };
+        int restarts = 0;
+        while (!token.IsCancellationRequested)
+        {
+            var server = _mediaServer;
+            if (server is null) return;
+            try { await server.WaitForExitAsync(token); }
+            catch (OperationCanceledException) { return; }
+            if (token.IsCancellationRequested) return;
+
+            int exitCode;
+            try { exitCode = server.ExitCode; } catch (InvalidOperationException) { exitCode = -1; }
+            Log?.Invoke($"[MediaMTX] Exited unexpectedly (code {exitCode}). OBS is disconnected; outputs will wait.");
+            foreach (var line in _mediaTail) Log?.Invoke("[MediaMTX] " + line);
+
+            var delay = restartDelays[Math.Min(restarts++, restartDelays.Length - 1)];
+            try { await Task.Delay(TimeSpan.FromSeconds(delay), token); }
+            catch (OperationCanceledException) { return; }
+
+            try
+            {
+                if (!PortIsAvailable())
+                {
+                    Log?.Invoke("[MediaMTX] Cannot restart: TCP 127.0.0.1:1935 is in use by another program.");
+                    continue;
+                }
+                await StartMediaServerAsync(token);
+                Log?.Invoke("[MediaMTX] Restarted. Click Start Streaming in OBS again if it stopped.");
+                server.Dispose();
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
+            catch (Exception ex)
+            {
+                Log?.Invoke("[MediaMTX] Restart failed: " + ex.Message);
+            }
+        }
+    }
+
     private async Task DrainMediaOutputAsync(StreamReader reader)
     {
         try
@@ -249,8 +326,10 @@ public sealed class RelayController
             string? line;
             while ((line = await reader.ReadLineAsync()) is not null)
             {
-                if (line.Contains("ERR", StringComparison.OrdinalIgnoreCase))
-                    Log?.Invoke("[MediaMTX] " + line);
+                // logLevel is warn, so every line is a warning or error worth showing.
+                _mediaTail.Enqueue(line);
+                while (_mediaTail.Count > 20) _mediaTail.TryDequeue(out _);
+                Log?.Invoke("[MediaMTX] " + line);
             }
         }
         catch (Exception) { /* Process stopped. */ }
