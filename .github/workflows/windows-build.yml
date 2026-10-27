@@ -1,0 +1,34 @@
+name: Windows build check
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["site/**", "docs/**", "*.md"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish application (unsigned, unverified)
+        shell: pwsh
+        run: dotnet publish ./RelayDesk/RelayDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist
+      - name: Add legal and setup instructions
+        shell: pwsh
+        run: |
+          Copy-Item README.md dist/README.md
+          Copy-Item LICENSE dist/LICENSE
+          New-Item -ItemType Directory -Force dist/tools | Out-Null
+          Copy-Item RelayDesk/tools/README.txt dist/tools/README.txt
+      - name: Upload unverified build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RelayDesk-Windows-unsigned-unverified
+          path: dist/

@@ -1,0 +1,27 @@
+name: Bug report
+about: Report a reproducible problem; exclude stream keys and secret URLs
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Never paste streaming credentials or unredacted FFmpeg commands."
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include encoder, resolution and destination but remove sensitive addresses and keys.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true

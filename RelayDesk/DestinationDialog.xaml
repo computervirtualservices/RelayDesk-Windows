@@ -1,0 +1,94 @@
+<Window x:Class="RelayDesk.DestinationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Streaming Destination" Width="725" Height="690" MinHeight="660" ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner" Background="#142033" Foreground="#F1F5FC">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#0E1827"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#496077"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Background" Value="#0E1827"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#496077"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="7"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="17,9"/>
+            <Setter Property="Background" Value="#2B5372"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,13">
+            <TextBlock Text="Streaming destination" FontSize="21" FontWeight="Bold" Foreground="White"/>
+            <TextBlock Text="Paste the RTMP/RTMPS server and stream key from your platform's live dashboard."
+                       Foreground="#C6D3E1" Margin="0,5,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+            <TextBlock Text="Platform preset" Margin="0,0,0,4"/>
+            <ComboBox x:Name="PlatformBox" SelectionChanged="Platform_Changed"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Destination name" Margin="0,0,0,4"/>
+            <TextBox x:Name="NameBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+            <TextBlock Text="RTMP / RTMPS server URL (without stream key or query)" Margin="0,0,0,4"/>
+            <TextBox x:Name="ServerBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="4" Margin="0,0,0,10">
+            <TextBlock Text="Stream key" Margin="0,0,0,4"/>
+            <PasswordBox x:Name="KeyBox"/>
+        </StackPanel>
+        <Grid Grid.Row="5" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="155"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Video output profile" Margin="0,0,0,4"/>
+                <ComboBox x:Name="ProfileBox" SelectionChanged="Profile_Changed"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Video bitrate (kbps)" Margin="0,0,0,4"/>
+                <TextBox x:Name="BitrateBox"/>
+            </StackPanel>
+        </Grid>
+        <StackPanel Grid.Row="6" Margin="0,0,0,10">
+            <TextBlock Text="Portrait output framing" Margin="0,0,0,4"/>
+            <ComboBox x:Name="VerticalBox"/>
+        </StackPanel>
+        <Border Grid.Row="7" Padding="10" Background="#20354B" CornerRadius="6" Margin="0,1,0,10">
+            <TextBlock x:Name="HelpText" Foreground="#D1DFED" TextWrapping="Wrap" FontSize="12"/>
+        </Border>
+        <TextBlock Grid.Row="8" Text="The stream key is encrypted for this Windows account. Stream links in FFmpeg process arguments are visible to sufficiently privileged local software. A portrait output cannot invent a separate portrait camera scene."
+                   Foreground="#AFC4D7" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <StackPanel Grid.Row="9" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Cancel" Click="Cancel_Click"/>
+            <Button Content="Save destination" Background="#157D6A" Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

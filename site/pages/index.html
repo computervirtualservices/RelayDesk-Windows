@@ -1,0 +1,58 @@
+<main id="main">
+  <section class="shell hero" aria-labelledby="hero-title">
+    <div>
+      <div class="eyebrow">Windows 11 • OBS • Open Source</div>
+      <div class="status">Early development · Windows validation pending</div>
+      <h1 id="hero-title">One stream.<br><span class="gradient">Six destinations.</span></h1>
+      <p class="lead">RelayDesk is an open-source Windows multistreaming app that accepts one OBS video feed and forwards independent RTMP/RTMPS outputs to YouTube, Rumble, Facebook, LinkedIn, TikTok and Instagram.</p>
+      <div class="cta"><a class="button" href="__REPO_URL__">View source on GitHub ↗</a><a class="button secondary" href="__BASE_URL__guide.html">Read setup guide →</a></div>
+      <p class="note">Free source code · C# / WPF / .NET 10 · No vendor account required for RelayDesk itself · Third-party live access required</p>
+    </div>
+    <div class="mock" role="img" aria-label="Illustrative desktop interface concept showing six configurable destination rows; not a screenshot of the verified app">
+      <div class="mockbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:10px">RelayDesk / Stream Manager</span></div>
+      <div class="mockgrid">
+        <p class="mocktitle">STREAM DESTINATIONS <span class="flag">6 PRESETS</span></p>
+        <div class="stream"><span class="iconbox">YT</span><div><strong>YouTube</strong><small>3840 × 2160 · 30 FPS</small></div><span class="meter pending">Setup</span></div>
+        <div class="stream"><span class="iconbox">RU</span><div><strong>Rumble</strong><small>1920 × 1080 · 30 FPS</small></div><span class="meter pending">Setup</span></div>
+        <div class="stream"><span class="iconbox">FB</span><div><strong>Facebook</strong><small>1920 × 1080 · 30 FPS</small></div><span class="meter pending">Setup</span></div>
+        <div class="stream"><span class="iconbox">LI</span><div><strong>LinkedIn</strong><small>1920 × 1080 · 30 FPS</small></div><span class="meter pending">Setup</span></div>
+        <div class="stream"><span class="iconbox">TK</span><div><strong>TikTok</strong><small>720 × 1280 · Portrait</small></div><span class="meter pending">Setup</span></div>
+        <div class="stream"><span class="iconbox">IG</span><div><strong>Instagram</strong><small>720 × 1280 · Portrait</small></div><span class="meter pending">Setup</span></div>
+        <div class="signal"><span>Local RTMP input • OBS Studio</span><strong>127.0.0.1</strong></div>
+      </div>
+    </div>
+  </section>
+  <div class="trust"><div class="shell">Built as a standalone alternative workflow to OBS multi-RTMP plugins — <strong>not</strong> an official OBS product and not a verified live production release.</div></div>
+  <section class="section shell" aria-labelledby="features-title">
+    <div class="eyebrow">What the current source implements</div>
+    <h2 id="features-title">Control your stream outputs</h2>
+    <p class="section-intro">A desktop-first control panel with a local ingest server and individually managed output processes.</p>
+    <div class="features">
+      <article class="feature"><div class="symbol">↗</div><h3>Six platform templates</h3><p>Configure YouTube, Rumble, Facebook, LinkedIn, TikTok or Instagram using destination-specific server URLs and stream keys.</p></article>
+      <article class="feature"><div class="symbol">▤</div><h3>Independent video profiles</h3><p>Choose 4K, 1080p, 720p, portrait crop, portrait letterbox, or no re-encode for compatible sources and destinations.</p></article>
+      <article class="feature"><div class="symbol">⚡</div><h3>NVIDIA NVENC option</h3><p>Uses FFmpeg H.264 NVENC encoding when a compatible NVIDIA GPU and FFmpeg build are present, with a CPU fallback.</p></article>
+      <article class="feature"><div class="symbol">⟳</div><h3>Independent retry logic</h3><p>One destination failing need not stop the others. Per-destination status and process controls are in the source code.</p></article>
+      <article class="feature"><div class="symbol">♧</div><h3>Locally stored configuration</h3><p>Keys are encrypted with Windows user-scoped DPAPI on disk. Active FFmpeg command-line arguments still present a local exposure risk.</p></article>
+      <article class="feature"><div class="symbol">⌘</div><h3>Designed for OBS Studio</h3><p>OBS sends one H.264/AAC stream to a localhost MediaMTX relay. RelayDesk starts separate FFmpeg outputs.</p></article>
+    </div>
+  </section>
+  <section class="section shell" aria-labelledby="output-title">
+    <div class="eyebrow">Platform outputs</div><h2 id="output-title">One source. Different formats.</h2>
+    <p class="section-intro">Output profiles are starting configurations, not guarantees of live access, feature availability, or acceptance by each platform. Always confirm provider requirements.</p>
+    <div class="channels">
+      <div class="channel"><span>YouTube</span><b>4K / 30 FPS</b><span>4K60 option if eligible</span></div>
+      <div class="channel"><span>Rumble</span><b>1080p / 30 FPS</b><span>Configurable 4K, acceptance unverified</span></div>
+      <div class="channel"><span>Facebook</span><b>1080p / 30 FPS</b><span>Account / event permissions required</span></div>
+      <div class="channel"><span>LinkedIn</span><b>1080p / 30 FPS</b><span>Broadcaster access / event setup</span></div>
+      <div class="channel"><span>TikTok</span><b>720 × 1280</b><span>Portrait / third-party stream access</span></div>
+      <div class="channel"><span>Instagram</span><b>720 × 1280</b><span>Portrait / Live Producer access</span></div>
+    </div>
+    <div class="callout"><strong>Important:</strong><p>RelayDesk 2.0 is source code undergoing Windows build and streaming validation. You will need to compile it and supply trusted FFmpeg/MediaMTX binaries separately. This site does not offer a signed installer or claim successful tested broadcasts.</p></div>
+  </section>
+  <section class="section shell" aria-labelledby="how-title">
+    <div class="eyebrow">Architecture</div><h2 id="how-title">How RelayDesk works</h2>
+    <div class="flow"><div><strong>OBS Studio</strong><small>Single RTMP source</small></div><div><strong>RelayDesk + MediaMTX</strong><small>Local loopback ingest</small></div><div><strong>FFmpeg output workers</strong><small>Separate platform publishing</small></div></div>
+    <p class="note">In the current architecture, each configured output uses its own FFmpeg worker. Even identical profiles are not yet encoded once and shared, so multiple 4K encodes can significantly burden CPU/GPU hardware.</p>
+  </section>
+  <section class="section shell" aria-labelledby="next-title"><div class="eyebrow">Get started</div><h2 id="next-title">Explore, build, improve.</h2><p class="section-intro">Download the source, review its security notes, run the Windows compile workflow, and test private broadcasts before going public.</p><div class="cta"><a class="button" href="__BASE_URL__guide.html">Windows setup guide →</a><a class="button secondary" href="__BASE_URL__faq.html">Common questions →</a><a class="button secondary" href="__REPO_URL__/issues">Report an issue ↗</a></div></section>
+</main>
