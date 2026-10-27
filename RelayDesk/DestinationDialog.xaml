@@ -1,24 +1,43 @@
 <Window x:Class="RelayDesk.DestinationDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Streaming Destination" Width="725" Height="690" MinHeight="660" ResizeMode="CanResize"
-        WindowStartupLocation="CenterOwner" Background="#142033" Foreground="#F1F5FC">
+        Title="Streaming Destination" Width="750" Height="740" MinHeight="690" ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner" Background="#142033" Foreground="#F1F5FC"
+        FontFamily="Segoe UI" FontSize="14" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Window.Resources>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="#0E1827"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="#496077"/>
             <Setter Property="Padding" Value="8"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="14"/>
         </Style>
         <Style TargetType="PasswordBox">
             <Setter Property="Background" Value="#0E1827"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="#496077"/>
             <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="14"/>
         </Style>
+        <!-- Use dark text on the native light dropdown surface. -->
         <Style TargetType="ComboBox">
-            <Setter Property="Padding" Value="7"/>
+            <Setter Property="Background" Value="#F4F7FB"/>
+            <Setter Property="Foreground" Value="#16253A"/>
+            <Setter Property="BorderBrush" Value="#8296AB"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="9,7"/>
+            <Setter Property="MinHeight" Value="35"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="#16253A"/>
+            <Setter Property="Background" Value="#F4F7FB"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#CEE6F3"/>
+                    <Setter Property="Foreground" Value="#0E2236"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="17,9"/>
@@ -82,10 +101,10 @@
             <ComboBox x:Name="VerticalBox"/>
         </StackPanel>
         <Border Grid.Row="7" Padding="10" Background="#20354B" CornerRadius="6" Margin="0,1,0,10">
-            <TextBlock x:Name="HelpText" Foreground="#D1DFED" TextWrapping="Wrap" FontSize="12"/>
+            <TextBlock x:Name="HelpText" Foreground="#D1DFED" TextWrapping="Wrap" FontSize="14"/>
         </Border>
         <TextBlock Grid.Row="8" Text="The stream key is encrypted for this Windows account. Stream links in FFmpeg process arguments are visible to sufficiently privileged local software. A portrait output cannot invent a separate portrait camera scene."
-                   Foreground="#AFC4D7" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                   Foreground="#D5E3F1" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Top"/>
         <StackPanel Grid.Row="9" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Cancel" Click="Cancel_Click"/>
             <Button Content="Save destination" Background="#157D6A" Click="Save_Click"/>
